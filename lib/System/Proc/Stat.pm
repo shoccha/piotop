@@ -84,6 +84,22 @@ sub get_cwd_by_pid {
     return $cwd_path;
 }
 
+sub get_cmdline_by_pid {
+
+    my ($self, $pid) = @_;
+
+    my $filename = File::Spec->catfile("/proc", $pid, "cmdline");
+    my ($cmdline) = $self->file_read($filename);
+
+    if (!defined $cmdline) {
+	$cmdline = '/';
+    } else {
+	$cmdline =~ s/\0/ /;
+    }
+
+    return $cmdline;
+}
+
 sub get_domain {
 
     my ($self, $cwd) = @_;

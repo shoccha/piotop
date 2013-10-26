@@ -65,7 +65,7 @@ our $PROC = System::Proc->new(
    syslog_type     =>  $SCRIPT,
 );
 
-our $PHEADER = sprintf("%s %-5s %-16s %-12s %-12s %-16s %-20s%s", 
+our $PHEADER = sprintf("%s %-5s %-16s %-12s %-12s %-16s %-30s %-20s%s",
                     "\e[1m",
                     "pid", 
                     "state", 
@@ -73,6 +73,7 @@ our $PHEADER = sprintf("%s %-5s %-16s %-12s %-12s %-16s %-20s%s",
                     "write", 
                     "command",
                     "cwd_path",
+                    "cmdline",
                     "\n\e[0m");
 
 $SIG{INT}  = sub { $PROC->TASK_SIGINT };
@@ -122,9 +123,10 @@ sub get_current_proc_info {
 	    my $cmd_data = $PROC->get_cmdname_by_pid($pid);
 	    my $exe_path = $PROC->get_exe_by_pid($pid);
 	    my $cwd_path = $PROC->get_cwd_by_pid($pid);
+	    my $cmdline  = $PROC->get_cmdline_by_pid($pid);
 
         $cmd_data->{envID} = "nothing" if !defined $cmd_data->{envID} || $cmd_data->{envID} !~ /^\d+$/;
-	    $current_data{$pid} = "$cmd_data->{Name}\0$cmd_data->{State}\0$io_data->{read_bytes}\0$io_data->{write_bytes}\0_exe_path\0$cmd_data->{envID}\0$cwd_path";
+	    $current_data{$pid} = "$cmd_data->{Name}\0$cmd_data->{State}\0$io_data->{read_bytes}\0$io_data->{write_bytes}\0_exe_path\0$cmd_data->{envID}\0$cwd_path\0$cmdline";
     }
 
     return \%current_data;
@@ -158,6 +160,7 @@ sub print_proc {
 	        $datalist{$pid}[4] = $cur_datalist{$pid}[4];
 	        $datalist{$pid}[5] = ($cur_datalist{$pid}[5] =~ /^\d+$/) ?   $cur_datalist{$pid}[5] :   "nothing";
 	        $datalist{$pid}[6] = $cur_datalist{$pid}[6];
+	        $datalist{$pid}[7] = $cur_datalist{$pid}[7];
 	    }
     }
 
@@ -178,8 +181,9 @@ sub print_proc {
         my $write       = $datalist{$pid}[3];
         my $command     = $datalist{$pid}[0];
         my $cwd_path    = $datalist{$pid}[6];
+        my $cmdline     = $datalist{$pid}[7];
 
-	    printf("%s %-5d %-16s %-12s %-12s %-16s %-20s%s\n", 
+	    printf("%s %-5d %-16s %-12s %-12s %-16s %-30s %-20s%s\n",
             $color_head,
             $pid, 
             $state, 
@@ -187,6 +191,7 @@ sub print_proc {
             $PROC->byte_to_bps($write, $interval), 
             $command,
             $cwd_path,
+            $cmdline,
             $color_tail) if $showzero == 0 || $read != 0 || $write != 0;
 
 	    return if $count >= $lines;
